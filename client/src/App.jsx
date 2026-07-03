@@ -20,6 +20,7 @@ import MyTickets from './pages/attendee/MyTickets';
 
 import OrganizerDashboard from './pages/organizer/OrganizerDashboard';
 import CreateEvent from './pages/organizer/CreateEvent';
+import EditEvent from './pages/organizer/EditEvent';
 import MyEvents from './pages/organizer/MyEvents';
 import AttendeeList from './pages/organizer/AttendeeList';
 import EventAnalytics from './pages/organizer/EventAnalytics';
@@ -46,7 +47,7 @@ function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
-        <Toaster position="top-right" />
+        <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
         <Routes>
           {/* Public layout */}
           <Route element={<MainLayout />}>
@@ -56,42 +57,22 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-            <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute roles={['attendee', 'organizer', 'admin']}>
-                  <MyTickets />
-                </ProtectedRoute>
-              }
-            />
+            <Route path="/dashboard" element={<ProtectedRoute roles={['attendee', 'organizer', 'admin']}><MyTickets /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Route>
 
-          {/* Organizer dashboard layout */}
-          <Route
-            path="/organizer"
-            element={
-              <ProtectedRoute roles={['organizer', 'admin']}>
-                <DashboardLayout links={organizerLinks} title="Organizer Panel" />
-              </ProtectedRoute>
-            }
-          >
+          {/* Organizer dashboard */}
+          <Route path="/organizer" element={<ProtectedRoute roles={['organizer', 'admin']}><DashboardLayout links={organizerLinks} title="Organizer Panel" /></ProtectedRoute>}>
             <Route index element={<OrganizerDashboard />} />
             <Route path="create-event" element={<CreateEvent />} />
             <Route path="events" element={<MyEvents />} />
+            <Route path="events/:id/edit" element={<EditEvent />} />
             <Route path="events/:eventId/attendees" element={<AttendeeList />} />
             <Route path="events/:eventId/analytics" element={<EventAnalytics />} />
           </Route>
 
-          {/* Admin dashboard layout */}
-          <Route
-            path="/admin"
-            element={
-              <ProtectedRoute roles={['admin']}>
-                <DashboardLayout links={adminLinks} title="Admin Panel" />
-              </ProtectedRoute>
-            }
-          >
+          {/* Admin dashboard */}
+          <Route path="/admin" element={<ProtectedRoute roles={['admin']}><DashboardLayout links={adminLinks} title="Admin Panel" /></ProtectedRoute>}>
             <Route index element={<AdminDashboard />} />
             <Route path="events" element={<ManageEvents />} />
             <Route path="users" element={<ManageUsers />} />
