@@ -116,10 +116,14 @@ const verifyPayment = asyncHandler(async (req, res) => {
 
   // Fire-and-forget confirmation email
   sendEmail({
-    to: attendeeDetails.email,
-    subject: `Ticket Confirmed: ${event.title}`,
-    html: ticketConfirmationTemplate(registration, event),
-  }).catch(() => {});
+  to: attendeeDetails.email,
+  subject: `Ticket Confirmed: ${event.title}`,
+  html: ticketConfirmationTemplate(registration, event),
+}).then((result) => {
+  console.log('Ticket email result:', result, 'sent to:', attendeeDetails.email);
+}).catch((err) => {
+  console.error('Ticket email error:', err);
+});
 
   res.status(201).json({ success: true, data: registration, message: 'Payment verified and ticket booked' });
 });

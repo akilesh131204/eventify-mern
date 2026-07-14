@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { FiPlus, FiTrash2, FiInfo } from 'react-icons/fi';
 import { eventService } from '../../services/eventService';
+import ImageUpload from '../../components/common/ImageUpload';
 
 const categories = ['Music', 'Technology', 'Business', 'Sports', 'Arts', 'Education', 'Food', 'Health', 'Other'];
 
@@ -25,7 +26,6 @@ const CreateEvent = () => {
     if (!form.description.trim()) newErrors.description = 'Description is required';
     if (form.description.trim().length < 20) newErrors.description = 'Description must be at least 20 characters';
     if (!form.date) newErrors.date = 'Event date is required';
-    else if (new Date(form.date) < new Date()) newErrors.date = 'Date cannot be in the past';
     if (!form.time) newErrors.time = 'Event time is required';
     if (!form.location.isOnline) {
       if (!form.location.venue.trim()) newErrors.venue = 'Venue name is required';
@@ -107,10 +107,14 @@ const CreateEvent = () => {
               <input placeholder="tech, AI, conference" value={form.tags} onChange={e => setForm(f => ({ ...f, tags: e.target.value }))} className="input-field" />
             </div>
           </div>
-          <div>
-            <label className="text-sm font-medium text-slate-700 mb-1 block">Cover Image URL <span className="text-slate-400 font-normal">(optional)</span></label>
-            <input placeholder="https://example.com/image.jpg" value={form.coverImage} onChange={e => setForm(f => ({ ...f, coverImage: e.target.value }))} className="input-field" />
-          </div>
+
+          {/* Image Upload */}
+          <ImageUpload
+            value={form.coverImage}
+            onChange={(url) => setForm(f => ({ ...f, coverImage: url }))}
+            label="Cover Image *"
+          />
+
           <div>
             <label className="text-sm font-medium text-slate-700 mb-1 block">YouTube Video URL <span className="text-slate-400 font-normal">(optional)</span></label>
             <input placeholder="https://youtube.com/watch?v=..." value={form.videoUrl} onChange={e => setForm(f => ({ ...f, videoUrl: e.target.value }))} className="input-field" />
@@ -164,7 +168,7 @@ const CreateEvent = () => {
         <div className="card p-5 space-y-4">
           <div className="flex justify-between items-center border-b pb-2">
             <h3 className="font-semibold text-slate-800 text-lg">Ticket Types</h3>
-            <button type="button" onClick={addTicket} className="text-sm text-primary-600 flex items-center gap-1 font-medium hover:text-primary-700">
+            <button type="button" onClick={addTicket} className="text-sm text-primary-600 flex items-center gap-1 font-medium">
               <FiPlus /> Add Ticket Type
             </button>
           </div>

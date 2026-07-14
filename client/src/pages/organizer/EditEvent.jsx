@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { FiPlus, FiTrash2 } from 'react-icons/fi';
 import { eventService } from '../../services/eventService';
+import ImageUpload from '../../components/common/ImageUpload';
 import Spinner from '../../components/common/Spinner';
 
 const categories = ['Music', 'Technology', 'Business', 'Sports', 'Arts', 'Education', 'Food', 'Health', 'Other'];
@@ -12,13 +13,13 @@ const EditEvent = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [errors, setErrors] = useState({});
   const [form, setForm] = useState({
     title: '', description: '', category: 'Technology',
     date: '', time: '', coverImage: '', videoUrl: '', tags: '',
     location: { venue: '', address: '', city: '', state: '', country: 'India', isOnline: false, onlineLink: '' },
   });
   const [ticketTypes, setTicketTypes] = useState([]);
-  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     const fetchEvent = async () => {
@@ -66,11 +67,6 @@ const EditEvent = () => {
     if (!form.location.isOnline && !form.location.venue.trim()) newErrors.venue = 'Venue is required';
     if (!form.location.isOnline && !form.location.city.trim()) newErrors.city = 'City is required';
     if (ticketTypes.length === 0) newErrors.tickets = 'At least one ticket type is required';
-    ticketTypes.forEach((t, i) => {
-      if (!t.name) newErrors[`ticket_name_${i}`] = 'Ticket name required';
-      if (t.price < 0) newErrors[`ticket_price_${i}`] = 'Invalid price';
-      if (t.quantity <= 0) newErrors[`ticket_qty_${i}`] = 'Quantity must be > 0';
-    });
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -102,6 +98,7 @@ const EditEvent = () => {
   if (loading) return <Spinner full />;
 
   const errClass = (field) => errors[field] ? 'border-red-400 focus:ring-red-400' : '';
+  const setLoc = (field, value) => setForm(f => ({ ...f, location: { ...f.location, [field]: value } }));
 
   return (
     <div className="max-w-3xl">
@@ -111,92 +108,82 @@ const EditEvent = () => {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6" noValidate>
-        {/* Basic Info */}
         <div className="card p-5 space-y-4">
           <h3 className="font-semibold text-slate-800 text-lg border-b pb-2">Basic Information</h3>
           <div>
             <label className="text-sm font-medium text-slate-700 mb-1 block">Event Title *</label>
-            <input
-              placeholder="Event Title"
-              value={form.title}
-              onChange={(e) => setForm(f => ({ ...f, title: e.target.value }))}
-              className={`input-field ${errClass('title')}`}
-            />
+            <input placeholder="Event Title" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} className={`input-field ${errClass('title')}`} />
             {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title}</p>}
           </div>
           <div>
             <label className="text-sm font-medium text-slate-700 mb-1 block">Description *</label>
-            <textarea
-              placeholder="Describe your event..."
-              rows={5}
-              value={form.description}
-              onChange={(e) => setForm(f => ({ ...f, description: e.target.value }))}
-              className={`input-field ${errClass('description')}`}
-            />
+            <textarea placeholder="Describe your event..." rows={5} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} className={`input-field ${errClass('description')}`} />
             {errors.description && <p className="text-red-500 text-xs mt-1">{errors.description}</p>}
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium text-slate-700 mb-1 block">Category</label>
-              <select value={form.category} onChange={(e) => setForm(f => ({ ...f, category: e.target.value }))} className="input-field">
+              <select value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} className="input-field">
                 {categories.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-sm font-medium text-slate-700 mb-1 block">Tags (comma separated)</label>
-              <input placeholder="tech, conference, AI" value={form.tags} onChange={(e) => setForm(f => ({ ...f, tags: e.target.value }))} className="input-field" />
+              <label className="text-sm font-medium text-slate-700 mb-1 block">Tags</label>
+              <input placeholder="tech, conference, AI" value={form.tags} onChange={e => setForm(f => ({ ...f, tags: e.target.value }))} className="input-field" />
             </div>
           </div>
-          <div>
-            <label className="text-sm font-medium text-slate-700 mb-1 block">Cover Image URL</label>
-            <input placeholder="https://..." value={form.coverImage} onChange={(e) => setForm(f => ({ ...f, coverImage: e.target.value }))} className="input-field" />
-          </div>
+
+          {/* Image Upload */}
+          <ImageUpload
+            value={form.coverImage}
+            onChange={(url) => setForm(f => ({ ...f, coverImage: url }))}
+            label="Cover Image"
+          />
+
           <div>
             <label className="text-sm font-medium text-slate-700 mb-1 block">Video URL (YouTube)</label>
-            <input placeholder="https://youtube.com/watch?v=..." value={form.videoUrl} onChange={(e) => setForm(f => ({ ...f, videoUrl: e.target.value }))} className="input-field" />
+            <input placeholder="https://youtube.com/watch?v=..." value={form.videoUrl} onChange={e => setForm(f => ({ ...f, videoUrl: e.target.value }))} className="input-field" />
           </div>
         </div>
 
-        {/* Date & Location */}
         <div className="card p-5 space-y-4">
           <h3 className="font-semibold text-slate-800 text-lg border-b pb-2">Date, Time & Location</h3>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium text-slate-700 mb-1 block">Date *</label>
-              <input type="date" value={form.date} onChange={(e) => setForm(f => ({ ...f, date: e.target.value }))} className={`input-field ${errClass('date')}`} />
+              <input type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} className={`input-field ${errClass('date')}`} />
               {errors.date && <p className="text-red-500 text-xs mt-1">{errors.date}</p>}
             </div>
             <div>
               <label className="text-sm font-medium text-slate-700 mb-1 block">Time *</label>
-              <input type="time" value={form.time} onChange={(e) => setForm(f => ({ ...f, time: e.target.value }))} className={`input-field ${errClass('time')}`} />
+              <input type="time" value={form.time} onChange={e => setForm(f => ({ ...f, time: e.target.value }))} className={`input-field ${errClass('time')}`} />
               {errors.time && <p className="text-red-500 text-xs mt-1">{errors.time}</p>}
             </div>
           </div>
           <label className="flex items-center gap-2 text-sm text-slate-700">
-            <input type="checkbox" checked={form.location.isOnline} onChange={(e) => setForm(f => ({ ...f, location: { ...f.location, isOnline: e.target.checked } }))} />
+            <input type="checkbox" checked={form.location.isOnline} onChange={e => setLoc('isOnline', e.target.checked)} />
             This is an online event
           </label>
           {form.location.isOnline ? (
-            <input placeholder="Online meeting link" value={form.location.onlineLink} onChange={(e) => setForm(f => ({ ...f, location: { ...f.location, onlineLink: e.target.value } }))} className="input-field" />
+            <input placeholder="Online meeting link" value={form.location.onlineLink} onChange={e => setLoc('onlineLink', e.target.value)} className="input-field" />
           ) : (
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium text-slate-700 mb-1 block">Venue *</label>
-                <input placeholder="Venue name" value={form.location.venue} onChange={(e) => setForm(f => ({ ...f, location: { ...f.location, venue: e.target.value } }))} className={`input-field ${errClass('venue')}`} />
+                <input placeholder="Venue name" value={form.location.venue} onChange={e => setLoc('venue', e.target.value)} className={`input-field ${errClass('venue')}`} />
                 {errors.venue && <p className="text-red-500 text-xs mt-1">{errors.venue}</p>}
               </div>
               <div>
                 <label className="text-sm font-medium text-slate-700 mb-1 block">City *</label>
-                <input placeholder="City" value={form.location.city} onChange={(e) => setForm(f => ({ ...f, location: { ...f.location, city: e.target.value } }))} className={`input-field ${errClass('city')}`} />
+                <input placeholder="City" value={form.location.city} onChange={e => setLoc('city', e.target.value)} className={`input-field ${errClass('city')}`} />
                 {errors.city && <p className="text-red-500 text-xs mt-1">{errors.city}</p>}
               </div>
-              <input placeholder="Address" value={form.location.address} onChange={(e) => setForm(f => ({ ...f, location: { ...f.location, address: e.target.value } }))} className="input-field" />
-              <input placeholder="State" value={form.location.state} onChange={(e) => setForm(f => ({ ...f, location: { ...f.location, state: e.target.value } }))} className="input-field" />
+              <input placeholder="Address" value={form.location.address} onChange={e => setLoc('address', e.target.value)} className="input-field" />
+              <input placeholder="State" value={form.location.state} onChange={e => setLoc('state', e.target.value)} className="input-field" />
             </div>
           )}
         </div>
 
-        {/* Ticket Types */}
         <div className="card p-5 space-y-4">
           <div className="flex justify-between items-center border-b pb-2">
             <h3 className="font-semibold text-slate-800 text-lg">Ticket Types</h3>
@@ -206,24 +193,13 @@ const EditEvent = () => {
           </div>
           {errors.tickets && <p className="text-red-500 text-xs">{errors.tickets}</p>}
           {ticketTypes.map((t, idx) => (
-            <div key={idx} className="bg-slate-50 p-4 rounded-xl space-y-3">
-              <div className="grid grid-cols-12 gap-2 items-start">
-                <div className="col-span-4">
-                  <input placeholder="Ticket Name (e.g. VIP)" value={t.name} onChange={(e) => updateTicket(idx, 'name', e.target.value)} className={`input-field ${errors[`ticket_name_${idx}`] ? 'border-red-400' : ''}`} />
-                  {errors[`ticket_name_${idx}`] && <p className="text-red-500 text-xs mt-1">{errors[`ticket_name_${idx}`]}</p>}
-                </div>
-                <div className="col-span-3">
-                  <input type="number" placeholder="Price ₹" value={t.price} onChange={(e) => updateTicket(idx, 'price', e.target.value)} className={`input-field ${errors[`ticket_price_${idx}`] ? 'border-red-400' : ''}`} />
-                  {errors[`ticket_price_${idx}`] && <p className="text-red-500 text-xs mt-1">{errors[`ticket_price_${idx}`]}</p>}
-                </div>
-                <div className="col-span-3">
-                  <input type="number" placeholder="Quantity" value={t.quantity} onChange={(e) => updateTicket(idx, 'quantity', e.target.value)} className={`input-field ${errors[`ticket_qty_${idx}`] ? 'border-red-400' : ''}`} />
-                  {errors[`ticket_qty_${idx}`] && <p className="text-red-500 text-xs mt-1">{errors[`ticket_qty_${idx}`]}</p>}
-                </div>
-                <button type="button" onClick={() => removeTicket(idx)} disabled={ticketTypes.length === 1} className="col-span-2 text-red-500 disabled:opacity-30 flex justify-center pt-2">
-                  <FiTrash2 />
-                </button>
-              </div>
+            <div key={idx} className="grid grid-cols-12 gap-2 items-center bg-slate-50 p-3 rounded-xl">
+              <input placeholder="Name (e.g. VIP)" value={t.name} onChange={e => updateTicket(idx, 'name', e.target.value)} className="input-field col-span-4" />
+              <input type="number" placeholder="Price ₹" value={t.price} onChange={e => updateTicket(idx, 'price', e.target.value)} className="input-field col-span-3" />
+              <input type="number" placeholder="Quantity" value={t.quantity} onChange={e => updateTicket(idx, 'quantity', e.target.value)} className="input-field col-span-3" />
+              <button type="button" onClick={() => removeTicket(idx)} disabled={ticketTypes.length === 1} className="col-span-2 text-red-500 disabled:opacity-30 flex justify-center">
+                <FiTrash2 />
+              </button>
             </div>
           ))}
         </div>

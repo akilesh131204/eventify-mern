@@ -9,17 +9,16 @@ const paymentRoutes = require('./routes/paymentRoutes');
 const registrationRoutes = require('./routes/registrationRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const uploadRoutes = require('./routes/uploadRoutes');
 
 const { notFound, errorHandler } = require('./middleware/errorMiddleware');
 
 const app = express();
 
-app.use(
-  cors({
-    origin: process.env.CLIENT_URL || '*',
-    credentials: true,
-  })
-);
+app.use(cors({
+  origin: process.env.CLIENT_URL || '*',
+  credentials: true,
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -38,6 +37,7 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/registrations', registrationRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/upload', uploadRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
