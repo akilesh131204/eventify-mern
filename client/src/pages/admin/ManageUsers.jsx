@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
-import { FiSearch, FiTrash2, FiEye, FiUserX, FiUserCheck, FiShield } from 'react-icons/fi';
+import { FiTrash2, FiEye, FiUserX, FiUserCheck, FiShield } from 'react-icons/fi';
 import { adminService } from '../../services';
 import Spinner from '../../components/common/Spinner';
 import api from '../../services/api';
@@ -37,10 +37,10 @@ const ManageUsers = () => {
   };
 
   const handleDeleteUser = async (id, name) => {
-    if (!window.confirm(`Delete user "${name}" permanently? This cannot be undone.`)) return;
+    if (!window.confirm(`Delete user "${name}"? This cannot be undone.`)) return;
     try {
       await api.delete(`/admin/users/${id}`);
-      toast.success('User deleted successfully');
+      toast.success('User deleted');
       fetchUsers();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Delete failed');
@@ -57,14 +57,16 @@ const ManageUsers = () => {
     }
   };
 
-  const filtered = users.filter(u => {
-    const matchSearch = u.name?.toLowerCase().includes(search.toLowerCase()) ||
+  if (loading) return <Spinner full />;
+
+  // Filter users based on search and role
+  const displayUsers = users.filter(u => {
+    const matchSearch = search === '' ||
+      u.name?.toLowerCase().includes(search.toLowerCase()) ||
       u.email?.toLowerCase().includes(search.toLowerCase());
     const matchRole = roleFilter === 'all' || u.role === roleFilter;
     return matchSearch && matchRole;
   });
-
-  if (loading) return <Spinner full />;
 
   return (
     <div>
@@ -72,25 +74,42 @@ const ManageUsers = () => {
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4 mb-6">
-        {[
-          { label: 'Total Users', value: users.length, color: 'text-primary-600' },
-          { label: 'Organizers', value: users.filter(u => u.role === 'organizer').length, color: 'text-purple-600' },
-          { label: 'Blocked', value: users.filter(u => u.isBlocked).length, color: 'text-red-600' },
-        ].map(stat => (
-          <div key={stat.label} className="card p-4 text-center">
-            <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
-            <p className="text-xs text-slate-500">{stat.label}</p>
-          </div>
-        ))}
+        <div className="card p-4 text-center">
+          <p className="text-2xl font-bold text-primary-600">{users.length}</p>
+          <p className="text-xs text-slate-500">Total Users</p>
+        </div>
+        <div className="card p-4 text-center">
+          <p className="text-2xl font-bold text-purple-600">{users.filter(u => u.role === 'organizer').length}</p>
+          <p className="text-xs text-slate-500">Organizers</p>
+        </div>
+        <div className="card p-4 text-center">
+          <p className="text-2xl font-bold text-red-600">{users.filter(u => u.isBlocked).length}</p>
+          <p className="text-xs text-slate-500">Blocked</p>
+        </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-4">
-        <div className="relative flex-1">
-          <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-          <input placeholder="Search by name or email..." value={search} onChange={e => setSearch(e.target.value)} className="input-field pl-9" />
-        </div>
-        <select value={roleFilter} onChange={e => setRoleFilter(e.target.value)} className="input-field sm:w-40">
+      {/* Search and Filter */}
+      <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
+        <input
+          type="text"
+          placeholder="Search by name or email..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          style={{
+            flex: 1, padding: '10px 14px',
+            border: '2px solid #e5e7eb', borderRadius: '10px',
+            fontSize: '14px', outline: 'none', boxSizing: 'border-box'
+          }}
+        />
+        <select
+          value={roleFilter}
+          onChange={(e) => setRoleFilter(e.target.value)}
+          style={{
+            padding: '10px 14px', border: '2px solid #e5e7eb',
+            borderRadius: '10px', fontSize: '14px', outline: 'none',
+            background: 'white', cursor: 'pointer'
+          }}
+        >
           <option value="all">All Roles</option>
           <option value="attendee">Attendee</option>
           <option value="organizer">Organizer</option>
@@ -98,67 +117,102 @@ const ManageUsers = () => {
         </select>
       </div>
 
+      {/* Results count */}
+      <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '12px' }}>
+        Showing {displayUsers.length} of {users.length} users
+      </p>
+
+      {/* Table */}
       <div className="card overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="bg-slate-50 text-slate-600">
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
+          <thead style={{ background: '#f8fafc' }}>
             <tr>
-              <th className="text-left p-3 font-medium">User</th>
-              <th className="text-left p-3 font-medium">Role</th>
-              <th className="text-left p-3 font-medium">Status</th>
-              <th className="text-left p-3 font-medium">Joined</th>
-              <th className="text-left p-3 font-medium">Actions</th>
+              <th style={{ textAlign: 'left', padding: '12px', fontWeight: '600', color: '#64748b' }}>User</th>
+              <th style={{ textAlign: 'left', padding: '12px', fontWeight: '600', color: '#64748b' }}>Role</th>
+              <th style={{ textAlign: 'left', padding: '12px', fontWeight: '600', color: '#64748b' }}>Status</th>
+              <th style={{ textAlign: 'left', padding: '12px', fontWeight: '600', color: '#64748b' }}>Joined</th>
+              <th style={{ textAlign: 'left', padding: '12px', fontWeight: '600', color: '#64748b' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {filtered.map((u) => (
-              <tr key={u._id} className="border-t border-slate-100 hover:bg-slate-50">
-                <td className="p-3">
-                  <div className="flex items-center gap-3">
-                    <div className="h-9 w-9 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-semibold text-sm flex-shrink-0">
+            {displayUsers.map((u) => (
+              <tr key={u._id} style={{ borderTop: '1px solid #f1f5f9' }}>
+                <td style={{ padding: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{
+                      width: '36px', height: '36px', borderRadius: '50%',
+                      background: '#eef2ff', color: '#4f46e5',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontWeight: '700', fontSize: '14px', flexShrink: 0
+                    }}>
                       {u.name?.[0]?.toUpperCase()}
                     </div>
                     <div>
-                      <p className="font-medium text-slate-900">{u.name}</p>
-                      <p className="text-xs text-slate-500">{u.email}</p>
+                      <p style={{ fontWeight: '600', color: '#1e293b', margin: 0 }}>{u.name}</p>
+                      <p style={{ fontSize: '12px', color: '#64748b', margin: 0 }}>{u.email}</p>
                     </div>
                   </div>
                 </td>
-                <td className="p-3">
+                <td style={{ padding: '12px' }}>
                   {u.role !== 'admin' ? (
-                    <select value={u.role} onChange={e => handleChangeRole(u._id, e.target.value)}
-                      className="text-xs border border-slate-200 rounded-lg px-2 py-1 bg-white capitalize">
+                    <select
+                      value={u.role}
+                      onChange={e => handleChangeRole(u._id, e.target.value)}
+                      style={{
+                        fontSize: '12px', border: '1px solid #e5e7eb',
+                        borderRadius: '8px', padding: '4px 8px',
+                        background: 'white', cursor: 'pointer'
+                      }}
+                    >
                       <option value="attendee">Attendee</option>
                       <option value="organizer">Organizer</option>
                     </select>
                   ) : (
-                    <span className="flex items-center gap-1 text-xs font-medium text-purple-700">
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#7c3aed', fontWeight: '600' }}>
                       <FiShield size={12} /> Admin
                     </span>
                   )}
                 </td>
-                <td className="p-3">
-                  <span className={`text-xs font-medium px-2 py-1 rounded-full ${u.isBlocked ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+                <td style={{ padding: '12px' }}>
+                  <span style={{
+                    fontSize: '12px', fontWeight: '600', padding: '4px 10px',
+                    borderRadius: '20px',
+                    background: u.isBlocked ? '#fee2e2' : '#dcfce7',
+                    color: u.isBlocked ? '#dc2626' : '#16a34a'
+                  }}>
                     {u.isBlocked ? 'Blocked' : 'Active'}
                   </span>
                 </td>
-                <td className="p-3 text-xs text-slate-500">
+                <td style={{ padding: '12px', fontSize: '12px', color: '#64748b' }}>
                   {new Date(u.createdAt).toLocaleDateString('en-IN')}
                 </td>
-                <td className="p-3">
-                  <div className="flex items-center gap-1">
-                    <button onClick={() => { setSelectedUser(u); setViewModal(true); }}
-                      className="p-1.5 text-slate-500 hover:bg-slate-100 rounded-lg" title="View details">
+                <td style={{ padding: '12px' }}>
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <button
+                      onClick={() => { setSelectedUser(u); setViewModal(true); }}
+                      style={{ padding: '6px', background: '#f1f5f9', border: 'none', borderRadius: '8px', cursor: 'pointer', color: '#475569' }}
+                      title="View details"
+                    >
                       <FiEye size={14} />
                     </button>
                     {u.role !== 'admin' && (
                       <>
-                        <button onClick={() => handleToggleBlock(u._id)}
-                          className={`p-1.5 rounded-lg ${u.isBlocked ? 'text-green-600 hover:bg-green-50' : 'text-amber-600 hover:bg-amber-50'}`}
-                          title={u.isBlocked ? 'Unblock' : 'Block'}>
+                        <button
+                          onClick={() => handleToggleBlock(u._id)}
+                          style={{
+                            padding: '6px', border: 'none', borderRadius: '8px', cursor: 'pointer',
+                            background: u.isBlocked ? '#dcfce7' : '#fef9c3',
+                            color: u.isBlocked ? '#16a34a' : '#ca8a04'
+                          }}
+                          title={u.isBlocked ? 'Unblock' : 'Block'}
+                        >
                           {u.isBlocked ? <FiUserCheck size={14} /> : <FiUserX size={14} />}
                         </button>
-                        <button onClick={() => handleDeleteUser(u._id, u.name)}
-                          className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg" title="Delete user">
+                        <button
+                          onClick={() => handleDeleteUser(u._id, u.name)}
+                          style={{ padding: '6px', background: '#fee2e2', border: 'none', borderRadius: '8px', cursor: 'pointer', color: '#dc2626' }}
+                          title="Delete user"
+                        >
                           <FiTrash2 size={14} />
                         </button>
                       </>
@@ -167,8 +221,12 @@ const ManageUsers = () => {
                 </td>
               </tr>
             ))}
-            {filtered.length === 0 && (
-              <tr><td colSpan={5} className="p-6 text-center text-slate-500">No users found.</td></tr>
+            {displayUsers.length === 0 && (
+              <tr>
+                <td colSpan={5} style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>
+                  No users found matching your search.
+                </td>
+              </tr>
             )}
           </tbody>
         </table>
@@ -176,50 +234,46 @@ const ManageUsers = () => {
 
       {/* View User Modal */}
       {viewModal && selectedUser && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="card p-6 w-full max-w-md">
-            <div className="flex justify-between items-start mb-4">
-              <h3 className="font-bold text-lg">User Details</h3>
-              <button onClick={() => setViewModal(false)} className="text-slate-400 hover:text-slate-600">✕</button>
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: '16px'
+        }}>
+          <div style={{ background: 'white', borderRadius: '20px', padding: '24px', width: '100%', maxWidth: '400px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
+              <h3 style={{ fontWeight: '700', fontSize: '18px', margin: 0 }}>User Details</h3>
+              <button onClick={() => setViewModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '18px', color: '#64748b' }}>✕</button>
             </div>
-            <div className="flex items-center gap-4 mb-4">
-              <div className="h-16 w-16 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-bold text-2xl">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
+              <div style={{
+                width: '60px', height: '60px', borderRadius: '50%',
+                background: '#eef2ff', color: '#4f46e5',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontWeight: '700', fontSize: '24px'
+              }}>
                 {selectedUser.name?.[0]?.toUpperCase()}
               </div>
               <div>
-                <h4 className="font-semibold text-slate-900">{selectedUser.name}</h4>
-                <p className="text-slate-500 text-sm">{selectedUser.email}</p>
-                <span className={`text-xs font-medium px-2 py-0.5 rounded-full capitalize ${
-                  selectedUser.role === 'admin' ? 'bg-purple-100 text-purple-700' :
-                  selectedUser.role === 'organizer' ? 'bg-blue-100 text-blue-700' :
-                  'bg-green-100 text-green-700'}`}>
-                  {selectedUser.role}
-                </span>
+                <p style={{ fontWeight: '700', fontSize: '16px', margin: '0 0 4px' }}>{selectedUser.name}</p>
+                <p style={{ color: '#64748b', fontSize: '13px', margin: 0 }}>{selectedUser.email}</p>
               </div>
             </div>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between py-2 border-b border-slate-100">
-                <span className="text-slate-500">Phone</span>
-                <span className="font-medium">{selectedUser.phone || 'Not provided'}</span>
+            {[
+              { label: 'Role', value: selectedUser.role },
+              { label: 'Phone', value: selectedUser.phone || 'Not provided' },
+              { label: 'Organization', value: selectedUser.organizationName || 'N/A' },
+              { label: 'Status', value: selectedUser.isBlocked ? 'Blocked' : 'Active' },
+              { label: 'Joined', value: new Date(selectedUser.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) },
+            ].map(item => (
+              <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #f1f5f9' }}>
+                <span style={{ color: '#64748b', fontSize: '14px' }}>{item.label}</span>
+                <span style={{ fontWeight: '600', fontSize: '14px', textTransform: 'capitalize' }}>{item.value}</span>
               </div>
-              {selectedUser.organizationName && (
-                <div className="flex justify-between py-2 border-b border-slate-100">
-                  <span className="text-slate-500">Organization</span>
-                  <span className="font-medium">{selectedUser.organizationName}</span>
-                </div>
-              )}
-              <div className="flex justify-between py-2 border-b border-slate-100">
-                <span className="text-slate-500">Status</span>
-                <span className={`font-medium ${selectedUser.isBlocked ? 'text-red-600' : 'text-green-600'}`}>
-                  {selectedUser.isBlocked ? 'Blocked' : 'Active'}
-                </span>
-              </div>
-              <div className="flex justify-between py-2">
-                <span className="text-slate-500">Joined</span>
-                <span className="font-medium">{new Date(selectedUser.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
-              </div>
-            </div>
-            <button onClick={() => setViewModal(false)} className="btn-secondary w-full mt-4">Close</button>
+            ))}
+            <button onClick={() => setViewModal(false)} style={{
+              width: '100%', marginTop: '16px', padding: '12px',
+              background: '#f1f5f9', border: 'none', borderRadius: '10px',
+              cursor: 'pointer', fontWeight: '600', fontSize: '14px'
+            }}>Close</button>
           </div>
         </div>
       )}
