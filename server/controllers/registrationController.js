@@ -1,7 +1,7 @@
 const asyncHandler = require('express-async-handler');
-const { Parser } = require('json2csv');
 const Registration = require('../models/Registration');
 const Event = require('../models/Event');
+const { Parser } = require('json2csv');
 
 // @desc    Get logged-in user's registrations
 // @route   GET /api/registrations/mine
@@ -49,29 +49,29 @@ const cancelRegistration = asyncHandler(async (req, res) => {
   registration.status = 'cancelled';
   registration.paymentStatus = 'refunded';
   await registration.save();
-  // Send cancellation email
-const { sendEmail } = require('../utils/sendEmail');
-const event = await Event.findById(registration.event);
-sendEmail({
-  to: registration.attendeeDetails.email,
-  subject: `Registration Cancelled - ${event?.title}`,
-  html: `
-    <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;">
-      <div style="background:#dc2626;padding:20px;border-radius:12px 12px 0 0;">
-        <h2 style="color:white;margin:0;">❌ Registration Cancelled</h2>
-      </div>
-      <div style="background:white;padding:24px;border-radius:0 0 12px 12px;border:1px solid #e5e7eb;">
-        <p>Hi ${registration.attendeeDetails.name},</p>
-        <p>Your registration for <strong>${event?.title}</strong> has been cancelled.</p>
-        <p>Ticket Code: <strong style="color:#4f46e5;font-family:monospace;">${registration.ticketCode}</strong></p>
-        <p>If you paid for this ticket, a refund will be processed within 5-7 business days.</p>
-        <p style="color:#64748b;font-size:14px;">If you have questions, contact our support team.</p>
-      </div>
-    </div>
-  `,
-}).catch(() => {});
 
+  // Send cancellation email
+  const { sendEmail } = require('../utils/sendEmail');
   const event = await Event.findById(registration.event);
+  sendEmail({
+    to: registration.attendeeDetails.email,
+    subject: `Registration Cancelled - ${event?.title}`,
+    html: `
+      <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;">
+        <div style="background:#dc2626;padding:20px;border-radius:12px 12px 0 0;">
+          <h2 style="color:white;margin:0;">❌ Registration Cancelled</h2>
+        </div>
+        <div style="background:white;padding:24px;border-radius:0 0 12px 12px;border:1px solid #e5e7eb;">
+          <p>Hi ${registration.attendeeDetails.name},</p>
+          <p>Your registration for <strong>${event?.title}</strong> has been cancelled.</p>
+          <p>Ticket Code: <strong style="color:#4f46e5;font-family:monospace;">${registration.ticketCode}</strong></p>
+          <p>If you paid for this ticket, a refund will be processed within 5-7 business days.</p>
+          <p style="color:#64748b;font-size:14px;">If you have questions, contact our support team.</p>
+        </div>
+      </div>
+    `,
+  }).catch(() => {});
+
   const ticketType = event.ticketTypes.id(registration.ticketTypeId);
   if (ticketType) {
     ticketType.sold = Math.max(0, ticketType.sold - registration.quantity);
