@@ -12,6 +12,7 @@ import EventList from './pages/EventList';
 import EventDetail from './pages/EventDetail';
 import Profile from './pages/Profile';
 import NotFound from './pages/NotFound';
+import Support from './pages/Support';
 
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
@@ -56,8 +57,11 @@ function App() {
             <Route path="/events/:id" element={<EventDetail />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/support" element={<Support />} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+            {/* My Tickets - separate from dashboard */}
             <Route path="/dashboard" element={<ProtectedRoute roles={['attendee', 'organizer', 'admin']}><MyTickets /></ProtectedRoute>} />
+            <Route path="/my-tickets" element={<ProtectedRoute roles={['attendee', 'organizer', 'admin']}><MyTickets /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Route>
 

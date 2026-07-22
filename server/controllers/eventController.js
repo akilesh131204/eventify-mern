@@ -98,6 +98,34 @@ const updateEvent = asyncHandler(async (req, res) => {
   if (req.user.role !== 'admin' && event.status === 'rejected') event.status = 'pending';
 
   const updated = await event.save();
+  // If event is being cancelled, notify all attendees
+if (req.body.status === 'cancelled') {
+  const { sendEmail } = require('../utils/sendEmail');
+  const registrations = await Registration.find({
+    event: event._id,
+    paymentStatus: 'paid',
+    status: 'confirmed'
+  });
+  registrations.forEach(reg => {
+    sendEmail({
+      to: reg.attendeeDetails.email,
+      subject: `Event Cancelled: ${event.title}`,
+      html: `
+        <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;">
+          <div style="background:#dc2626;padding:20px;border-radius:12px 12px 0 0;">
+            <h2 style="color:white;margin:0;">⚠️ Event Cancelled</h2>
+          </div>
+          <div style="background:white;padding:24px;border-radius:0 0 12px 12px;border:1px solid #e5e7eb;">
+            <p>Hi ${reg.attendeeDetails.name},</p>
+            <p>We regret to inform you that <strong>${event.title}</strong> has been cancelled by the organizer.</p>
+            <p>Your ticket <strong style="color:#4f46e5;font-family:monospace;">${reg.ticketCode}</strong> has been invalidated.</p>
+            <p>A refund will be processed within 5-7 business days.</p>
+          </div>
+        </div>
+      `,
+    }).catch(() => {});
+  });
+}
   res.json({ success: true, data: updated });
 });
 
